@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+
+  # ─────────────────────────────────────────────
+  # ZOOKEEPER — Kafka coordination
+  # ─────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: hormuz_zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - hormuz-net
+
+  # ─────────────────────────────────────────────
+  # KAFKA BROKER
+  # ─────────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: hormuz_kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"     # host-side apps (Node.js producer, .NET consumers)
+      - "29092:29092"   # inter-container communication
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_RETENTION_HOURS: 168
+    networks:
+      - hormuz-net
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # ksqlDB — stream processing
+  # ─────────────────────────────────────────────
+  ksqldb-server:
+    image: confluentinc/ksqldb-server:0.29.0
+    container_name: hormuz_ksqldb
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8088:8088"
+    environment:
+      KSQL_KSQL_BOOTSTRAP_SERVERS: kafka:29092
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
+      KSQL_KSQL_SERVICE_ID: hormuz_ksql_
+    networks:
+      - hormuz-net
+
+  # ─────────────────────────────────────────────
+  # ksqlDB CLI — for running queries interactively
+  # Usage: docker exec -it hormuz_ksqldb_cli ksql http://ksqldb-server:8088
+  # ─────────────────────────────────────────────
+  ksqldb-cli:
+    image: confluentinc/ksqldb-cli:0.29.0
+    container_name: hormuz_ksqldb_cli
+    depends_on:
+      - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
+    networks:
+      - hormuz-net
+
+  # ─────────────────────────────────────────────
+  # KAFKA UI — browse topics and messages
+  # http://localhost:8080
+  # ─────────────────────────────────────────────
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: hormuz_kafka_ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: hormuz-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_KSQLDBSERVER: http://ksqldb-server:8088
+    networks:
+      - hormuz-net
+
+networks:
+  hormuz-net:
+    driver: bridge
