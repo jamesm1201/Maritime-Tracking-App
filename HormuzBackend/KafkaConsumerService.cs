@@ -1,5 +1,7 @@
 using Confluent.Kafka;
 using Microsoft.AspNetCore.SignalR;
+using HormuzBackend.Hubs;
+
 
 namespace HormuzBackend.Services;
 

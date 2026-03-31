@@ -1,3 +1,5 @@
+namespace HormuzBackend.Hubs;
+
 using Microsoft.AspNetCore.SignalR;
 
 public class MissionHub : Hub
