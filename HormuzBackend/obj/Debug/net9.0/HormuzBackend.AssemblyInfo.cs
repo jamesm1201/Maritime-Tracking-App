@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HormuzBackend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+929d5120c080e8f6a8d03bd0c2342ebdeb5d8e8f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7f9a259582c0dc0afcd761df59c18f94cc9e5125")]
 [assembly: System.Reflection.AssemblyProductAttribute("HormuzBackend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HormuzBackend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
